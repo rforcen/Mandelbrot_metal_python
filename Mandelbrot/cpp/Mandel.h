@@ -21,11 +21,11 @@ typedef float4 range;
 const int clRed=0xff, clBlue=0xff0000, maxColors=4096;
 
 class Mandelbrot {
+public:
+
     int width=0, height=0;
     int iter=150, power=2;
     float xstart = -1, ystart = -1, xend = 1, yend = 1;
-    
-public:
     
     Mandelbrot() {}
     Mandelbrot(range range, int w, int h, int iter, int power) {

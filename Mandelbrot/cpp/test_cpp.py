@@ -1,8 +1,8 @@
-from Mandelbrot import generate
+from Mandelbrot import mandelbrot
 import matplotlib.pyplot as plt
-import numpy as np
 
-w, h = 1024, 768
-img = generate(-1.5, -1.5, 2.2, .8, w, h, 600, 6).reshape(h, w, 4)
+mf = 1
+img = mandelbrot(range=[-1.5, -1.5, 2.2, .8], w=1024 * mf, h=768 * mf, iters=800, power=5)
+
 plt.imshow(img)
 plt.show()

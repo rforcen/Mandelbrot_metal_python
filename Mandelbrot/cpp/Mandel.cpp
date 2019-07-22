@@ -16,25 +16,38 @@ namespace np = boost::python::numpy;
 #include "Mandel.h"
 #include "Thread.h"
 
+// threaded mandelbrot generator
+class MandelbrotThreaded : public Mandelbrot {
+public:
+    color*image;
+
+    MandelbrotThreaded(range range, int w, int h, int iter, int power) : Mandelbrot(range, w, h, iter, power) {
+        image=new color[w*h];
+    }
+
+    color* generate() {
+        Thread(width * height).run([this](int ix){
+            image[ix] = generateZ(ix / width, ix % width);
+        });
+        return image;
+    }
+};
+
 static void initPython() {
-        Py_Initialize(); // init boost & numpy boost
-        np::initialize();
+     Py_Initialize(); // init boost & numpy boost
+     np::initialize();
 }
 
-np::ndarray generate(float x0, float y0, float x1, float y1, int w, int h, int iters, int power) {
+// generate a h x w x 4 -> np.uint8 numpy array w/ mandelbrot fractal using multithreaded
+static np::ndarray mandelbrot(p::list l_range, int w, int h, int iters, int power) {
     initPython();
 
-    range range={x0, y0, x1, y1};
-    Mandelbrot m(range, w, h, iters, power);
+    range range; // copy l_range to range
+    for (int i=0; i<4; i++) ((float*)&range)[i]=p::extract<float>(l_range[i]);
 
-    int sz=w*h;
-    color *img=new color[sz];
+    MandelbrotThreaded mth(range, w, h, iters, power);
 
-    Thread(sz).run([&m, &img, w](int ix){
-        img[ix] = m.generateZ(ix/w, ix%w);
-    });
-
-    return np::from_data(img,                // data -> image
+    return np::from_data(mth.generate(),     // data -> image
             np::dtype::get_builtin<byte>(),  // dtype -> byte
             p::make_tuple(h, w, 4),          // shape -> h x w x 4
             p::make_tuple(w*4, 4, 1), p::object());    // stride in bytes [1,1,1,1] (4) each row = w x 4
@@ -42,5 +55,5 @@ np::ndarray generate(float x0, float y0, float x1, float y1, int w, int h, int i
 }
 
 BOOST_PYTHON_MODULE(Mandelbrot) {
-    def("generate", generate);
+    def("mandelbrot", mandelbrot, (p::arg("range"), p::arg("w"), p::arg("h"), p::arg("iters"), p::arg("power")));
 }
